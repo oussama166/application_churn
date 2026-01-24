@@ -1,0 +1,101 @@
+cust_id_v2,monthly_mrr,avg_rev_per_u,sub_start_date,user_email,region
+CUST-1001,49.99,49.99,2023-01-15,user1001@example.com,North America
+CUST-1002,120.50,60.25,2023-03-22,user1002@example.com,Europe
+CUST-1003,250.00,250.00,2022-11-05,user1003@example.com,Asia
+CUST-1004,15.00,15.00,2024-01-10,user1004@example.com,North America
+CUST-1005,99.00,99.00,2023-06-30,user1005@example.com,Europe
+CUST-1006,500.00,125.00,2022-08-14,user1006@example.com,North America
+CUST-1007,29.99,29.99,2023-09-01,user1007@example.com,Asia
+CUST-1008,199.50,199.50,2023-12-12,user1008@example.com,Europe
+CUST-1009,45.00,45.00,2024-02-28,user1009@example.com,North America
+CUST-1010,75.25,75.25,2023-04-18,user1010@example.com,Asia
+CUST-1011,300.00,300.00,2022-10-25,user1011@example.com,North America
+CUST-1012,12.99,12.99,2023-07-07,user1012@example.com,Europe
+CUST-1013,85.00,85.00,2023-05-20,user1013@example.com,North America
+CUST-1014,150.00,75.00,2022-12-05,user1014@example.com,Asia
+CUST-1015,60.00,60.00,2024-03-15,user1015@example.com,Europe
+CUST-1016,220.00,220.00,2023-02-10,user1016@example.com,North America
+CUST-1017,9.99,9.99,2023-08-25,user1017@example.com,Asia
+CUST-1018,400.00,400.00,2022-09-19,user1018@example.com,Europe
+CUST-1019,55.50,55.50,2023-11-03,user1019@example.com,North America
+CUST-1020,135.00,135.00,2024-01-20,user1020@example.com,Asia
+CUST-1021,89.99,89.99,2023-03-12,user1021@example.com,North America
+CUST-1022,35.00,35.00,2023-06-08,user1022@example.com,Europe
+CUST-1023,175.00,175.00,2022-07-30,user1023@example.com,North America
+CUST-1024,25.00,25.00,2023-10-15,user1024@example.com,Asia
+CUST-1025,110.00,110.00,2023-12-01,user1025@example.com,Europe
+CUST-1026,65.00,65.00,2024-02-14,user1026@example.com,North America
+CUST-1027,299.00,299.00,2023-05-05,user1027@example.com,Asia
+CUST-1028,18.50,18.50,2023-09-22,user1028@example.com,Europe
+CUST-1029,95.00,95.00,2022-11-18,user1029@example.com,North America
+CUST-1030,420.00,420.00,2024-01-05,user1030@example.com,Asia
+CUST-1031,50.00,50.00,2023-04-10,user1031@example.com,North America
+CUST-1032,145.00,72.50,2023-08-08,user1032@example.com,Europe
+CUST-1033,210.00,210.00,2022-12-25,user1033@example.com,North America
+CUST-1034,30.00,30.00,2023-07-19,user1034@example.com,Asia
+CUST-1035,160.00,160.00,2023-10-30,user1035@example.com,Europe
+CUST-1036,70.00,70.00,2024-03-01,user1036@example.com,North America
+CUST-1037,325.00,325.00,2023-01-28,user1037@example.com,Asia
+CUST-1038,22.00,22.00,2023-06-14,user1038@example.com,Europe
+CUST-1039,105.00,105.00,2022-09-05,user1039@example.com,North America
+CUST-1040,480.00,120.00,2023-11-20,user1040@example.com,Asia
+CUST-1041,59.99,59.99,2023-02-15,user1041@example.com,North America
+CUST-1042,125.00,125.00,2023-05-25,user1042@example.com,Europe
+CUST-1043,190.00,190.00,2022-10-10,user1043@example.com,North America
+CUST-1044,40.00,40.00,2023-12-08,user1044@example.com,Asia
+CUST-1045,230.00,230.00,2023-08-02,user1045@example.com,Europe
+CUST-1046,80.00,80.00,2024-01-12,user1046@example.com,North America
+CUST-1047,350.00,350.00,2023-04-22,user1047@example.com,Asia
+CUST-1048,28.00,28.00,2023-09-15,user1048@example.com,Europe
+CUST-1049,115.00,115.00,2022-11-30,user1049@example.com,North America
+CUST-1050,450.00,450.00,2023-07-05,user1050@example.com,Asia
+CUST-1051,52.50,52.50,2023-03-08,user1051@example.com,North America
+CUST-1052,130.00,65.00,2023-06-20,user1052@example.com,Europe
+CUST-1053,200.00,200.00,2022-08-18,user1053@example.com,North America
+CUST-1054,38.00,38.00,2023-11-12,user1054@example.com,Asia
+CUST-1055,170.00,170.00,2024-02-05,user1055@example.com,Europe
+CUST-1056,90.00,90.00,2023-01-10,user1056@example.com,North America
+CUST-1057,310.00,310.00,2023-05-18,user1057@example.com,Asia
+CUST-1058,24.00,24.00,2023-10-02,user1058@example.com,Europe
+CUST-1059,100.00,100.00,2022-12-15,user1059@example.com,North America
+CUST-1060,410.00,410.00,2023-09-28,user1060@example.com,Asia
+CUST-1061,62.00,62.00,2023-02-22,user1061@example.com,North America
+CUST-1062,140.00,140.00,2023-07-15,user1062@example.com,Europe
+CUST-1063,240.00,240.00,2022-10-05,user1063@example.com,North America
+CUST-1064,48.00,48.00,2023-12-20,user1064@example.com,Asia
+CUST-1065,180.00,180.00,2023-04-05,user1065@example.com,Europe
+CUST-1066,75.00,75.00,2024-01-30,user1066@example.com,North America
+CUST-1067,360.00,360.00,2023-08-12,user1067@example.com,Asia
+CUST-1068,32.00,32.00,2023-11-08,user1068@example.com,Europe
+CUST-1069,120.00,120.00,2022-09-25,user1069@example.com,North America
+CUST-1070,440.00,110.00,2023-06-02,user1070@example.com,Asia
+CUST-1071,58.00,58.00,2023-03-20,user1071@example.com,North America
+CUST-1072,138.00,138.00,2023-07-28,user1072@example.com,Europe
+CUST-1073,215.00,215.00,2022-11-10,user1073@example.com,North America
+CUST-1074,42.00,42.00,2024-02-18,user1074@example.com,Asia
+CUST-1075,195.00,195.00,2023-05-12,user1075@example.com,Europe
+CUST-1076,82.00,82.00,2023-01-25,user1076@example.com,North America
+CUST-1077,330.00,330.00,2023-09-08,user1077@example.com,Asia
+CUST-1078,26.00,26.00,2023-12-05,user1078@example.com,Europe
+CUST-1079,108.00,108.00,2022-10-30,user1079@example.com,North America
+CUST-1080,460.00,460.00,2023-04-15,user1080@example.com,Asia
+CUST-1081,64.00,64.00,2023-08-20,user1081@example.com,North America
+CUST-1082,148.00,74.00,2023-11-28,user1082@example.com,Europe
+CUST-1083,260.00,260.00,2022-07-20,user1083@example.com,North America
+CUST-1084,55.00,55.00,2024-01-08,user1084@example.com,Asia
+CUST-1085,185.00,185.00,2023-06-12,user1085@example.com,Europe
+CUST-1086,95.00,95.00,2023-02-28,user1086@example.com,North America
+CUST-1087,375.00,375.00,2023-10-22,user1087@example.com,Asia
+CUST-1088,34.00,34.00,2023-03-15,user1088@example.com,Europe
+CUST-1089,122.00,122.00,2022-12-10,user1089@example.com,North America
+CUST-1090,490.00,122.50,2023-07-25,user1090@example.com,Asia
+CUST-1091,66.00,66.00,2023-01-05,user1091@example.com,North America
+CUST-1092,152.00,152.00,2023-05-30,user1092@example.com,Europe
+CUST-1093,270.00,270.00,2022-09-12,user1093@example.com,North America
+CUST-1094,58.00,58.00,2023-11-15,user1094@example.com,Asia
+CUST-1095,205.00,205.00,2024-03-10,user1095@example.com,Europe
+CUST-1096,98.00,98.00,2023-08-05,user1096@example.com,North America
+CUST-1097,390.00,390.00,2023-02-18,user1097@example.com,Asia
+CUST-1098,36.00,36.00,2023-06-25,user1098@example.com,Europe
+CUST-1099,128.00,128.00,2022-11-22,user1099@example.com,North America
+CUST-1100,500.00,500.00,2023-10-10,user1100@example.com,Asia

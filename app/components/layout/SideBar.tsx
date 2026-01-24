@@ -15,11 +15,12 @@ import SettingsIcon from '@mui/icons-material/SettingsRounded';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import UploadIcon from '@mui/icons-material/Upload';
 
 // [3] Updated Items with real paths
 const MENU_ITEMS = [
     { text: 'Home', icon: <HomeIcon />, path: '/' }, // Or '/dashboard'
-    { text: 'Accounts', icon: <PeopleIcon />, path: '/accounts' },
+    { text: 'Imports', icon: <UploadIcon />, path: '/imports' },
     { text: 'Analytics', icon: <BarChartIcon />, path: '/analytics' },
     { text: 'Reports', icon: <DescriptionIcon />, path: '/reports' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
