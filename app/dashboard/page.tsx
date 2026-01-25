@@ -74,8 +74,6 @@ const KpiCard = ({title, value, trend, trendLabel, icon, color, isAlert}: any) =
 );
 
 export default function DashboardPage() {
-    // @ts-ignore
-    // @ts-ignore
     return (
         <Box sx={{width: '100%', maxWidth: 1600, mx: 'auto'}}>
 
@@ -109,8 +107,6 @@ export default function DashboardPage() {
 
             {/* 2. Top KPI Cards - FIXED GRID SYNTAX */}
             <Grid container spacing={3} sx={{mb: 4}}>
-                {/* OLD: <Grid item xs={12} sm={6} md={3}> */}
-                {/* NEW: <Grid size={{ xs: 12, sm: 6, md: 3 }}> */}
                 <Grid size={{xs: 12, sm: 6, md: 3}}>
                     <KpiCard
                         title="Overall Churn Rate" value="4.2%" trend="+0.5%" trendLabel="vs last month"

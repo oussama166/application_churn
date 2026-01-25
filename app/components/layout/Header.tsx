@@ -17,7 +17,8 @@ import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import Link from 'next/link'; // Import Next.js Link for client-side navigation
+import Link from 'next/link';
+import { signOut } from "next-auth/react";
 
 export default function Header() {
     const pathname = usePathname(); // Example: "/dashboard/settings"
@@ -153,6 +154,7 @@ export default function Header() {
                     <MenuItem value="year">Last Year</MenuItem>
                 </Select>
             </Box>
+            <Button onClick={() => signOut()}>Sign Out</Button>
         </Box>
     );
 }

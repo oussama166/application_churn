@@ -3,10 +3,10 @@ import "./globals.css";
 import {AppRouterCacheProvider} from '@mui/material-nextjs/v15-appRouter';
 import {Roboto} from 'next/font/google';
 import {ThemeProvider} from '@mui/material/styles';
-import {Box, CssBaseline} from '@mui/material'; // Added CssBaseline for consistent reset
+import {Box, CssBaseline} from '@mui/material';
 import theme from './theme';
 
-// Import your components
+import { auth } from "@/auth";
 import Header from "@/app/components/layout/Header";
 import SideBar from "@/app/components/layout/SideBar";
 import QueryProvider from "@/app/lib/QueryProvider";
@@ -18,34 +18,40 @@ const roboto = Roboto({
     variable: '--font-roboto',
 });
 
-export default function RootLayout({children}: { children: React.ReactNode }) {
+export default async function RootLayout({children}: { children: React.ReactNode }) {
+    // 1. Check if the user is authenticated
+    const session = await auth();
+    const isAuthenticated = !!session?.user;
+
     return (
         <html lang="en" className={roboto.variable}>
         <body>
         <QueryProvider>
             <AppRouterCacheProvider options={{key: 'css'}}>
                 <ThemeProvider theme={theme}>
-                    <CssBaseline/> {/* Normalizes CSS across browsers */}
+                    <CssBaseline/>
 
-                    {/* 1. Global Flex Container */}
-                    <Box sx={{display: 'flex', minHeight: '100vh', bgcolor: '#F8F9FC'}}>
+                    {isAuthenticated ? (
+                        // --- LAYOUT A: DASHBOARD (Logged In) ---
+                        <Box sx={{display: 'flex', minHeight: '100vh', bgcolor: '#F8F9FC'}}>
+                            {/* Sidebar gets the user info */}
+                            <SideBar user={session.user}/>
 
-                        {/* 2. Sidebar (Fixed Left) */}
-                        <SideBar/>
-
-                        {/* 3. Main Content Area (Header + Page Content) */}
-                        <Box sx={{flexGrow: 1, display: 'flex', flexDirection: 'column'}}>
-
-                            {/* Header sits at the top of the content area */}
-                            <Header/>
-
-                            {/* The actual page content */}
-                            <Box component="main" sx={{p: 4, flexGrow: 1}}>
-                                {children}
+                            <Box sx={{flexGrow: 1, display: 'flex', flexDirection: 'column'}}>
+                                <Header/>
+                                <Box component="main" sx={{p: 4, flexGrow: 1}}>
+                                    {children}
+                                </Box>
                             </Box>
                         </Box>
+                    ) : (
+                        // --- LAYOUT B: AUTH PAGES (Logged Out) ---
+                        // Simply render children (LoginPage with AuthShell)
+                        <Box component="main" sx={{ minHeight: '100vh' }}>
+                            {children}
+                        </Box>
+                    )}
 
-                    </Box>
                 </ThemeProvider>
             </AppRouterCacheProvider>
         </QueryProvider>
