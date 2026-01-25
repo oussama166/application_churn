@@ -33,7 +33,7 @@ export default function LoginPage() {
             setError("Email ou mot de passe invalide (Essayez mdp: 123456)");
             setLoading(false);
         } else {
-            router.push("/"); // Redirection vers le dashboard
+            router.push("/dashboard"); // Redirection vers le dashboard
             router.refresh(); // Rafraîchir pour mettre à jour la session côté serveur
         }
     };

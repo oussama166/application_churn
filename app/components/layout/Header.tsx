@@ -1,7 +1,7 @@
 'use client';
 
-import React, {useState} from 'react';
-import {usePathname} from 'next/navigation'; // [1] Hook to get current path
+import React, { useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
     Box,
     IconButton,
@@ -11,7 +11,9 @@ import {
     Breadcrumbs,
     Typography,
     Select,
-    SelectChangeEvent, MenuItem, InputAdornment
+    SelectChangeEvent,
+    MenuItem,
+    InputAdornment
 } from '@mui/material';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -20,16 +22,28 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import Link from 'next/link';
 import { signOut } from "next-auth/react";
 
+// Helper to format "user-settings" -> "User Settings"
+const formatSegment = (segment: string) => {
+    return segment
+        .replace(/-/g, ' ')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 export default function Header() {
-    const pathname = usePathname(); // Example: "/dashboard/settings"
+    const pathname = usePathname();
+    const router = useRouter(); // Optional: used if you want URL-based date state
 
-
-    const pathSegments = pathname.split('/').filter((segment) => segment);
+    // 1. Filter out 'dashboard' if your Home link already points there
+    // This prevents "Home > Dashboard > Settings"
+    const pathSegments = pathname.split('/').filter((segment) => segment && segment !== 'dashboard');
 
     const [dateRange, setDateRange] = useState('30_days');
 
     const handleDateChange = (event: SelectChangeEvent) => {
         setDateRange(event.target.value as string);
+        // Optional: Update URL params so the filter persists on refresh
+        // router.push(`${pathname}?range=${event.target.value}`);
     };
 
     return (
@@ -41,50 +55,47 @@ export default function Header() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                px: 4,
+                px: { xs: 2, md: 4 }, // Responsive padding
                 bgcolor: '#FFFFFF',
-                borderBottom: '1px solid #f0f0f0'
+                borderBottom: '1px solid #f0f0f0',
+                position: 'sticky', // Optional: keeps header at top
+                top: 0,
+                zIndex: 1100,
             }}
         >
-            {/* 1. Dynamic Breadcrumbs */}
+            {/* --- Left Side: Breadcrumbs --- */}
             <Breadcrumbs
-                separator={<NavigateNextIcon fontSize="small"/>}
+                separator={<NavigateNextIcon fontSize="small" sx={{ color: '#999' }} />}
                 aria-label="breadcrumb"
             >
-                {/* Always show Home as the first item */}
                 <MuiLink
                     component={Link}
                     underline="hover"
                     color="inherit"
-                    href="/"
+                    href="/dashboard"
                     variant="body2"
+                    sx={{ fontWeight: pathSegments.length === 0 ? 600 : 400 }}
                 >
-                    Home
+                    Dashboard
                 </MuiLink>
 
-                {/* Map over the path segments to create the rest */}
                 {pathSegments.map((segment, index) => {
-                    // Reconstruct the path for this segment (e.g., /dashboard/settings)
-                    const href = `/${pathSegments.slice(0, index + 1).join('/')}`;
-
-                    // Check if it's the last segment (current page)
+                    // Reconstruct path. Note: We need to add 'dashboard' back to the href
+                    // since we filtered it out of the visual array
+                    const href = `/dashboard/${pathSegments.slice(0, index + 1).join('/')}`;
                     const isLast = index === pathSegments.length - 1;
-
-                    // Format the text: "dashboard" -> "Dashboard"
-                    const formattedText = segment.charAt(0).toUpperCase() + segment.slice(1);
+                    const formattedText = formatSegment(segment);
 
                     return isLast ? (
-                        // Render Text for the current page (not clickable)
                         <Typography
                             key={href}
                             variant="body2"
                             color="text.primary"
-                            fontWeight="500"
+                            fontWeight="600"
                         >
                             {formattedText}
                         </Typography>
                     ) : (
-                        // Render Link for parent pages
                         <MuiLink
                             key={href}
                             component={Link}
@@ -99,32 +110,22 @@ export default function Header() {
                 })}
             </Breadcrumbs>
 
-            {/* 2. Actions (Unchanged) */}
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
+            {/* --- Right Side: Actions Wrapper --- */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 
-                {/* Notification Bell */}
-                <IconButton sx={{bgcolor: '#F5F7FA'}}>
-                    <Badge color="error" variant="dot" overlap="circular">
-                        <NotificationsNoneIcon sx={{color: '#5A6B7C'}}/>
-                    </Badge>
-                </IconButton>
-
-                {/* Date Range Select Dropdown */}
+                {/* Date Select */}
                 <Select
                     value={dateRange}
                     onChange={handleDateChange}
                     displayEmpty
-                    // Use your specific arrow icon
                     IconComponent={KeyboardArrowDownIcon}
-                    // Add the calendar icon at the start
                     startAdornment={
-                        <InputAdornment position="start" sx={{mr: 1}}>
-                            <CalendarTodayIcon fontSize="small" sx={{color: '#5A6B7C'}}/>
+                        <InputAdornment position="start" sx={{ mr: 1 }}>
+                            <CalendarTodayIcon fontSize="small" sx={{ color: '#5A6B7C' }} />
                         </InputAdornment>
                     }
-                    // Custom Styling to match your previous Button
                     sx={{
-                        height: 40, // Match standard button height
+                        height: 40,
                         bgcolor: '#FFFFFF',
                         color: '#333',
                         border: '1px solid #E0E0E0',
@@ -134,13 +135,9 @@ export default function Header() {
                         boxShadow: 'none',
                         '&:hover': {
                             bgcolor: '#F9FAFB',
-                            borderColor: '#E0E0E0',
+                            borderColor: '#B0B0B0',
                         },
-                        // Remove the default MUI blue outline/border
-                        '& .MuiOutlinedInput-notchedOutline': {
-                            border: 'none',
-                        },
-                        // Adjust padding to look like a button
+                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
                         '& .MuiSelect-select': {
                             paddingLeft: 0,
                             display: 'flex',
@@ -153,8 +150,25 @@ export default function Header() {
                     <MenuItem value="90_days">Last 3 Months</MenuItem>
                     <MenuItem value="year">Last Year</MenuItem>
                 </Select>
+
+                {/* Notification Bell */}
+                <IconButton sx={{ bgcolor: '#F5F7FA', border: '1px solid #E0E0E0' }}>
+                    <Badge color="error" variant="dot" overlap="circular">
+                        <NotificationsNoneIcon sx={{ color: '#5A6B7C' }} />
+                    </Badge>
+                </IconButton>
+
+                <Box sx={{ width: '1px', height: '24px', bgcolor: '#E0E0E0', mx: 1 }} />
+
+                {/* Sign Out Button */}
+                <Button
+                    onClick={() => signOut()}
+                    color="error"
+                    size="small"
+                >
+                    Sign Out
+                </Button>
             </Box>
-            <Button onClick={() => signOut()}>Sign Out</Button>
         </Box>
     );
 }

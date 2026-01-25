@@ -1,25 +1,33 @@
+// src/middleware.ts
 import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 
 export default auth((req) => {
+    // Est-ce que l'utilisateur est connecté ?
     const isLoggedIn = !!req.auth
-    const isOnDashboard = req.nextUrl.pathname.startsWith('/dashboard') || req.nextUrl.pathname === '/'
-    const isOnLogin = req.nextUrl.pathname.startsWith('/login')
 
-    // 1. Si on est sur le dashboard et PAS connecté -> Redirection Login
-    if (isOnDashboard && !isLoggedIn) {
+    // Chemin actuel
+    const { pathname } = req.nextUrl
+
+    // On définit la page de login
+    const isOnLoginPage = pathname.startsWith('/login')
+
+    // SCÉNARIO 1 : L'utilisateur n'est PAS connecté et essaie d'accéder à une page protégée
+    // (Tout est protégé sauf la page de login)
+    if (!isLoggedIn && !isOnLoginPage) {
         return NextResponse.redirect(new URL('/login', req.nextUrl))
     }
 
-    // 2. Si on est sur Login et DÉJÀ connecté -> Redirection Dashboard
-    if (isOnLogin && isLoggedIn) {
-        return NextResponse.redirect(new URL('/', req.nextUrl))
+    // SCÉNARIO 2 : L'utilisateur EST connecté mais essaie de retourner sur le login
+    // On le renvoie sur le dashboard (accueil)
+    if (isLoggedIn && isOnLoginPage) {
+        return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
     }
 
     return NextResponse.next()
 })
 
-// Configuration pour éviter de bloquer les fichiers statiques (images, css...)
+// Configuration du Matcher (Indispensable pour que le middleware ne tourne pas sur les images/api)
 export const config = {
     matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 }
