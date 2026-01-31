@@ -1,33 +1,41 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
     try {
-        // 1. Parse the incoming JSON data
+        // 1. Get the JSON body sent from your ImportPage (Frontend)
         const body = await request.json();
-        const { data, mappings } = body;
 
-        // 2. Log it to your VS Code terminal (Server-side)
-        console.log("------------------------------------------------");
-        console.log("🚀 SERVER RECEIVED IMPORT REQUEST");
-        console.log(`📦 Rows received: ${data.length}`);
-        console.log("🔧 Mappings used:", mappings);
-        console.log("📝 First row sample:", data[0]);
-        console.log("------------------------------------------------");
+        // 2. Define your Python Backend URL
+        // Make sure your FastAPI is running on port 8000
+        const FASTAPI_URL = 'http://127.0.0.1:8000/api/predict/store-results';
 
-        // 3. Simulate a database delay (2 seconds)
-        // This lets you see the "Processing..." spinner on the frontend
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        // 4. Return success
-        return NextResponse.json({
-            success: true,
-            message: `Successfully processed ${data.length} records.`
+        // 3. Forward the data to FastAPI
+        const res = await fetch(FASTAPI_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
         });
 
-    } catch (error) {
-        console.error("Server Error:", error);
+        // 4. Handle Errors from the Backend
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('FastAPI Error:', errorText);
+            return NextResponse.json(
+                { message: `Backend Error: ${res.statusText}`, detail: errorText },
+                { status: res.status }
+            );
+        }
+
+        // 5. Return the Success Response to the Frontend
+        const data = await res.json();
+        return NextResponse.json(data);
+
+    } catch (error: any) {
+        console.error('Next.js Proxy Error:', error);
         return NextResponse.json(
-            { success: false, message: "Failed to process data" },
+            { message: 'Internal Server Error', detail: error.message },
             { status: 500 }
         );
     }

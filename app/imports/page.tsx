@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import Papa from 'papaparse'; // Import the parser
-import { useMutation } from '@tanstack/react-query';
+import React, {useState, useRef, useMemo} from 'react';
+import Papa from 'papaparse';
+import {useMutation} from '@tanstack/react-query';
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel, Button,
     Select, MenuItem, FormControl, Chip, Alert,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    Grid, Divider
 } from '@mui/material';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -20,12 +21,64 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 // --- CONFIGURATION ---
 const STEPS = ['Upload Data', 'Validate & Map', 'Preview & Run'];
 
+// LISTE EXACTE DES CHAMPS DU BACKEND (app/schemas.py)
+// key: nom du champ dans le JSON envoyé au backend
 const INITIAL_MAPPING = [
-    { id: 1, systemField: 'Customer ID', desc: 'Unique identifier', csvHeader: '', status: 'error', required: true, type: 'string' },
-    { id: 2, systemField: 'MRR', desc: 'Monthly Recurring Revenue', csvHeader: '', status: 'error', required: true, type: 'number' },
-    { id: 3, systemField: 'ARPU', desc: 'Avg Revenue Per User', csvHeader: '', status: 'error', required: true, type: 'number' },
-    { id: 4, systemField: 'Subscription Start', desc: 'Date (ISO 8601)', csvHeader: '', status: 'error', required: true, type: 'date' },
-];
+    // Identifiants
+    {id: 1, key: 'customer_id', label: 'Customer ID', type: 'string', required: true},
+    {id: 2, key: 'snapshot_date', label: 'Snapshot Date', type: 'date', required: true},
+
+    // Demographics
+    {id: 3, key: 'age', label: 'Age', type: 'number', required: true},
+    {id: 4, key: 'gender', label: 'Gender', type: 'string', required: true},
+    {id: 5, key: 'region', label: 'Region', type: 'string', required: true},
+
+    // Contrat
+    {id: 6, key: 'activation_date', label: 'Activation Date', type: 'date', required: true},
+    {id: 7, key: 'tenure_months', label: 'Tenure (Months)', type: 'number', required: true},
+    {id: 8, key: 'offer_type', label: 'Offer Type', type: 'string', required: true},
+    {id: 9, key: 'contract_type', label: 'Contract Type', type: 'string', required: true},
+    {id: 10, key: 'commitment_duration_months', label: 'Commitment (Months)', type: 'number', required: true},
+    {id: 11, key: 'months_to_contract_end', label: 'Months to End', type: 'number', required: true},
+    {id: 12, key: 'renewal_last_12m', label: 'Renewed (12m)', type: 'boolean', required: true},
+
+    // Services
+    {id: 13, key: 'music_pack', label: 'Music Pack', type: 'boolean', required: true},
+    {id: 14, key: 'intl_calls', label: 'Intl Calls', type: 'boolean', required: true},
+    {id: 15, key: 'extra_data', label: 'Extra Data', type: 'boolean', required: true},
+
+    // Facturation
+    {id: 16, key: 'monthly_fee', label: 'Monthly Fee', type: 'number', required: true},
+    {id: 17, key: 'last_bill_amount', label: 'Last Bill Amount', type: 'number', required: true},
+    {id: 18, key: 'payment_history_score', label: 'Payment Score', type: 'number', required: true},
+    {id: 19, key: 'late_payments_6m', label: 'Late Payments (6m)', type: 'number', required: true},
+    {id: 20, key: 'unpaid_invoices', label: 'Unpaid Invoices', type: 'number', required: true},
+    {id: 21, key: 'bill_variation_3m', label: 'Bill Variation (3m)', type: 'number', required: true},
+
+    // Usage
+    {id: 22, key: 'voice_minutes', label: 'Voice Minutes', type: 'number', required: true},
+    {id: 23, key: 'data_gb', label: 'Data (GB)', type: 'number', required: true},
+    {id: 24, key: 'sms_count', label: 'SMS Count', type: 'number', required: true},
+    {id: 25, key: 'usage_trend_3m', label: 'Usage Trend', type: 'string', required: true},
+    {id: 26, key: 'roaming_days_3m', label: 'Roaming Days', type: 'number', required: true},
+    {id: 27, key: 'out_of_bundle_charges', label: 'Out Bundle Charges', type: 'number', required: true},
+
+    // Technique
+    {id: 28, key: 'network_incidents_3m', label: 'Network Incidents', type: 'number', required: true},
+    {id: 29, key: 'avg_download_mbps', label: 'Avg Speed (Mbps)', type: 'number', required: true},
+    {id: 30, key: 'drop_call_rate', label: 'Drop Call Rate', type: 'number', required: true},
+
+    // Support
+    {id: 31, key: 'tech_complaints_3m', label: 'Tech Complaints', type: 'number', required: true},
+    {id: 32, key: 'support_calls_3m', label: 'Support Calls', type: 'number', required: true},
+    {id: 33, key: 'billing_contacts', label: 'Billing Contacts', type: 'number', required: true},
+    {id: 34, key: 'tech_contacts', label: 'Tech Contacts', type: 'number', required: true},
+    {id: 35, key: 'commercial_contacts', label: 'Commercial Contacts', type: 'number', required: true},
+    {id: 36, key: 'tickets_opened_3m', label: 'Tickets Opened', type: 'number', required: true},
+    {id: 37, key: 'tickets_closed_3m', label: 'Tickets Closed', type: 'number', required: true},
+    {id: 38, key: 'avg_resolution_time_hours', label: 'Avg Res Time (Hrs)', type: 'number', required: true},
+    {id: 39, key: 'phone_number', label: 'Phone Number', type: 'string', required: true},
+].map(f => ({...f, csvHeader: '', status: 'error', desc: f.required ? 'Required' : 'Optional'}));
 
 export default function ImportPage() {
     // State
@@ -33,208 +86,223 @@ export default function ImportPage() {
     const [mappings, setMappings] = useState(INITIAL_MAPPING);
     const [file, setFile] = useState<File | null>(null);
     const [csvColumns, setCsvColumns] = useState<string[]>([]);
-    const [previewData, setPreviewData] = useState<any[]>([]);
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [rawCsvData, setRawCsvData] = useState<any[]>([]); // Toutes les données
     const [isComplete, setIsComplete] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // 1. Define the Mutation
+    // --- MUTATION ---
     const mutation = useMutation({
-        mutationFn: async (payload: any) => {
-            const response = await fetch('/api/imports', {
+        mutationFn: async (payload: any[]) => {
+            // Note: On envoie directement le tableau transformé à l'API Next.js
+            const response = await fetch('/api/imports', { // Assure-toi que cette route existe dans Next.js
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
-                throw new Error('Failed to upload data');
+                const err = await response.json();
+                throw new Error(err.message || 'Failed to process data');
             }
-
             return response.json();
         },
         onSuccess: (data) => {
-            console.log("Success:", data);
-            setIsComplete(true); // Show success screen
+            setIsComplete(true);
         },
         onError: (error) => {
             console.error("Error:", error);
-            alert("Upload failed. Please try again.");
+            alert(`Error: ${error.message}`);
         }
     });
 
-    // Hidden Input Ref
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
+    // --- VALIDATION HELPER ---
     const validateColumnData = (rows: any[], columnName: string, type: string) => {
         let invalidCount = 0;
-
-        // Check first 50 rows (or all rows if less)
         const rowsToCheck = rows.slice(0, 50);
 
         rowsToCheck.forEach(row => {
             const value = row[columnName];
-            if (!value) return; // Skip empty for now (handled by required check)
+            if (value === undefined || value === null || value === '') return;
 
             if (type === 'number') {
-                // Remove currency symbols ($) and commas before checking
                 const cleanValue = value.toString().replace(/[$,]/g, '');
-                if (isNaN(parseFloat(cleanValue)) || !isFinite(cleanValue)) {
-                    invalidCount++;
-                }
-            }
-            else if (type === 'date') {
-                // Simple date check
-                if (isNaN(Date.parse(value))) {
-                    invalidCount++;
-                }
+                if (isNaN(parseFloat(cleanValue)) || !isFinite(cleanValue)) invalidCount++;
+            } else if (type === 'date') {
+                if (isNaN(Date.parse(value))) invalidCount++;
+            } else if (type === 'boolean') {
+                // Accepte: true, false, 0, 1, yes, no
+                const v = value.toString().toLowerCase();
+                if (!['true', 'false', '1', '0', 'yes', 'no'].includes(v)) invalidCount++;
             }
         });
-
         return invalidCount;
     };
 
-    // --- 1. HANDLE FILE UPLOAD ---
+    // --- FILE UPLOAD ---
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const uploadedFile = event.target.files?.[0];
         if (!uploadedFile) return;
 
         setFile(uploadedFile);
 
-        // Parse the CSV to get headers and preview data
         Papa.parse(uploadedFile, {
-            header: true, // Treat first row as headers
+            header: true,
             skipEmptyLines: true,
-            preview: 5, // Only parse first 5 rows for the preview
             complete: (results) => {
-                // 1. Get Headers from the first row
                 const headers = results.meta.fields || [];
                 setCsvColumns(headers);
-                setPreviewData(results.data);
+                setRawCsvData(results.data);
 
-                // 2. Auto-Map Logic (Optional Smart Matching)
-                // Checks if CSV header roughly matches System field (e.g. "email" == "User Email")
+                // Auto-Map Logic
                 const newMappings = INITIAL_MAPPING.map(field => {
+                    // Essaie de trouver une correspondance exacte ou partielle
                     const match = headers.find(h =>
-                        h.toLowerCase().includes(field.systemField.toLowerCase().split(' ')[0]) ||
-                        h.toLowerCase() === field.systemField.toLowerCase()
+                        h.toLowerCase() === field.key.toLowerCase() ||
+                        h.toLowerCase() === field.label.toLowerCase() ||
+                        h.toLowerCase().replace(/_/g, ' ') === field.label.toLowerCase()
                     );
 
                     return {
                         ...field,
-                        csvHeader: match || '', // Auto-select if found
-                        status: match ? 'matched' : (field.required ? 'error' : 'warning')
+                        csvHeader: match || '',
+                        status: match ? 'matched' : 'error'
                     };
                 });
 
                 setMappings(newMappings);
-                setActiveStep(1); // Move to next step
+                setActiveStep(1);
             },
-            error: (error) => {
-                console.error("Error parsing CSV:", error);
-                alert("Failed to parse CSV file.");
-            }
+            error: () => alert("Failed to parse CSV file.")
         });
     };
 
-    // --- 2. HANDLE MAPPING CHANGES ---
+    // --- HANDLE MAPPING CHANGE ---
     const handleMappingChange = (id: number, newValue: string) => {
         setMappings((prev) =>
             prev.map((field) => {
                 if (field.id !== id) return field;
 
-                // 1. Basic Required Check
                 if (!newValue || newValue === 'select') {
-                    return {
-                        ...field,
-                        csvHeader: '',
-                        status: field.required ? 'error' : 'warning',
-                        desc: field.required ? 'Required field' : 'Optional'
-                    };
+                    return {...field, csvHeader: '', status: 'error', desc: 'Required'};
                 }
 
-                // 2. Type Validation (The new part)
-                // We pass the entire 'previewData' state to check the values
-                const invalidCount = validateColumnData(previewData, newValue, field.type);
-
+                const invalidCount = validateColumnData(rawCsvData, newValue, field.type);
                 let newStatus = 'matched';
-                let newDesc = field.desc; // Reset to default description
+                let newDesc = field.desc;
 
                 if (invalidCount > 0) {
                     newStatus = 'warning';
-                    newDesc = `Found ${invalidCount} invalid ${field.type}s in first 50 rows`;
+                    newDesc = `${invalidCount} potential invalid values found`;
                 }
 
-                return {
-                    ...field,
-                    csvHeader: newValue,
-                    status: newStatus,
-                    desc: newDesc
-                };
+                return {...field, csvHeader: newValue, status: newStatus, desc: newDesc};
             })
         );
     };
 
-    // --- 3. HELPER: FILE SIZE FORMATTER ---
-    const formatFileSize = (bytes: number) => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
+    // --- CONVERSION DES DONNEES (CSV -> BACKEND JSON) ---
     const handleStartScoring = () => {
-        // Validate first
-        const hasErrors = mappings.some(m => m.required && (m.status === 'error' || !m.csvHeader));
-        if (hasErrors) {
-            alert("Please map all required fields.");
+        // 1. Vérifier si tout est mappé
+        const missing = mappings.filter(m => m.required && !m.csvHeader);
+        if (missing.length > 0) {
+            alert(`Please map the following fields: ${missing.map(m => m.label).join(', ')}`);
             return;
         }
 
-        // Prepare payload
-        const payload = {
-            data: previewData,
-            mappings: mappings
-        };
+        // 2. Transformer les données
+        const formattedData = rawCsvData.map(row => {
+            const newObj: any = {};
 
-        // Trigger the mutation
-        mutation.mutate(payload);
+            mappings.forEach(map => {
+                const rawVal = row[map.csvHeader];
+
+                if (map.type === 'number') {
+                    // Nettoyage et conversion en Float
+                    const num = parseFloat((rawVal || '0').toString().replace(/[$,]/g, ''));
+                    newObj[map.key] = isNaN(num) ? 0 : num;
+                } else if (map.type === 'boolean') {
+                    // Conversion intelligente "Yes" -> true
+                    const str = (rawVal || '').toString().toLowerCase();
+                    newObj[map.key] = ['true', 'yes', '1'].includes(str);
+                } else {
+                    // String & Date (gardés en string pour l'instant)
+                    newObj[map.key] = rawVal || '';
+                }
+            });
+            return newObj;
+        });
+
+        // 3. Envoyer au serveur
+        mutation.mutate(formattedData);
     };
 
-    // --- RENDER SUCCESS ---
+    const formatFileSize = (bytes: number) => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + ['Bytes', 'KB', 'MB', 'GB'][i];
+    };
+
     if (isComplete) {
         return (
-            <Box sx={{ maxWidth: 600, mx: 'auto', mt: 10, textAlign: 'center' }}>
-                <Paper sx={{ p: 5, borderRadius: 4 }}>
-                    <Box sx={{ width: 80, height: 80, bgcolor: '#E8F5E9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 3 }}>
-                        <CheckIcon sx={{ fontSize: 40, color: '#2E7D32' }} />
+            <Box sx={{maxWidth: 600, mx: 'auto', mt: 10, textAlign: 'center'}}>
+                <Paper sx={{p: 5, borderRadius: 4}}>
+                    <Box sx={{
+                        width: 80,
+                        height: 80,
+                        bgcolor: '#E8F5E9',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 3
+                    }}>
+                        <CheckIcon sx={{fontSize: 40, color: '#2E7D32'}}/>
                     </Box>
                     <Typography variant="h4" fontWeight="bold" gutterBottom>Import Successful!</Typography>
-                    <Button variant="contained" onClick={() => { setActiveStep(0); setFile(null); setIsComplete(false); }}>Import Another</Button>
+                    <Typography color="text.secondary" sx={{mb: 3}}>Your data has been processed and churn predictions
+                        are ready.</Typography>
+                    <Button variant="contained" onClick={() => {
+                        setActiveStep(0);
+                        setFile(null);
+                        setIsComplete(false);
+                    }}>Import Another</Button>
                 </Paper>
             </Box>
         );
     }
 
     return (
-        <Box sx={{ maxWidth: 1200, mx: 'auto', p: 4 }}>
-
-            {/* HEADER */}
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{maxWidth: 1200, mx: 'auto', p: 4}}>
+            {/* Header */}
+            <Box sx={{mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold" gutterBottom>Import Churn Data</Typography>
-                    <Typography variant="body1" color="text.secondary">Upload CSV for batch processing.</Typography>
+                    <Typography variant="h4" fontWeight="bold" gutterBottom>Import Data</Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        Map your CSV columns to the AI Model input fields.
+                    </Typography>
                 </Box>
-                <Button variant="outlined" color="inherit" onClick={() => { setActiveStep(0); setFile(null); }}>Cancel</Button>
+                <Button variant="outlined" color="inherit" onClick={() => {
+                    setActiveStep(0);
+                    setFile(null);
+                }}>
+                    Cancel
+                </Button>
             </Box>
 
-            {/* STEPPER */}
-            <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+            {/* Stepper */}
+            <Paper sx={{p: 3, mb: 3, borderRadius: 3}}>
                 <Stepper activeStep={activeStep} alternativeLabel>
-                    {STEPS.map((label) => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+                    {STEPS.map((label) => (
+                        <Step key={label}>
+                            <StepLabel>{label}</StepLabel>
+                        </Step>
+                    ))}
                 </Stepper>
             </Paper>
 
-            {/* --- STEP 0: UPLOAD --- */}
+            {/* STEP 0: UPLOAD */}
             {activeStep === 0 && (
                 <Paper
                     sx={{
@@ -243,111 +311,137 @@ export default function ImportPage() {
                         border: '2px dashed #E0E0E0',
                         bgcolor: '#FAFAFA',
                         cursor: 'pointer',
-                        '&:hover': { bgcolor: '#F5F5F5', borderColor: '#2962FF' }
+                        '&:hover': {bgcolor: '#F5F5F5', borderColor: '#2962FF'}
                     }}
-                    // Clicking the box triggers the hidden input
                     onClick={() => fileInputRef.current?.click()}
                 >
-                    <input
-                        type="file"
-                        accept=".csv"
-                        hidden
-                        ref={fileInputRef}
-                        onChange={handleFileUpload}
-                    />
-                    <CloudUploadIcon sx={{ fontSize: 60, color: '#BDBDBD', mb: 2 }} />
+                    <input type="file" accept=".csv" hidden ref={fileInputRef} onChange={handleFileUpload}/>
+                    <CloudUploadIcon sx={{fontSize: 60, color: '#BDBDBD', mb: 2}}/>
                     <Typography variant="h6" fontWeight="medium">Click to upload or drag and drop</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>CSV files only (Max 50MB)</Typography>
-                    <Button variant="contained" sx={{ mt: 3, pointerEvents: 'none' }}>
-                        Select CSV File
-                    </Button>
+                    <Button variant="contained" sx={{mt: 3, pointerEvents: 'none'}}>Select CSV File</Button>
                 </Paper>
             )}
 
-            {/* --- STEP 1 & 2: MAPPING & PREVIEW --- */}
+            {/* STEP 1: MAPPING & PREVIEW */}
             {activeStep >= 1 && (
                 <>
-                    {/* FILE INFO CARD */}
-                    <Paper sx={{ p: 2, mb: 3, borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#F8F9FC', border: '1px solid #E0E0E0' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Box sx={{ width: 40, height: 40, bgcolor: '#E3F2FD', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <InsertDriveFileIcon sx={{ color: '#1976D2' }} />
-                            </Box>
+                    {/* File Info Bar */}
+                    <Paper sx={{
+                        p: 2,
+                        mb: 3,
+                        borderRadius: 3,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        bgcolor: '#F8F9FC'
+                    }}>
+                        <Box sx={{display: 'flex', gap: 2, alignItems: 'center'}}>
+                            <InsertDriveFileIcon color="primary"/>
                             <Box>
-                                {/* Real File Name & Size */}
                                 <Typography variant="subtitle2" fontWeight="bold">{file?.name}</Typography>
                                 <Typography variant="caption" color="text.secondary">
-                                    {file ? formatFileSize(file.size) : ''} • Uploaded just now
+                                    {file ? formatFileSize(file.size) : ''}
                                 </Typography>
                             </Box>
                         </Box>
-                        <Button size="small" onClick={() => setActiveStep(0)}>Replace File</Button>
+                        <Button size="small" onClick={() => setActiveStep(0)}>Change File</Button>
                     </Paper>
 
-                    {/* MAPPING TABLE */}
-                    <Paper sx={{ mb: 3, borderRadius: 3, overflow: 'hidden' }}>
-                        <Box sx={{ p: 3, borderBottom: '1px solid #f0f0f0' }}>
-                            <Typography variant="h6" fontWeight="bold">Schema Validation</Typography>
+                    {/* Mapping Grid */}
+                    <Paper sx={{mb: 3, borderRadius: 3, overflow: 'hidden'}}>
+                        <Box sx={{p: 3, borderBottom: '1px solid #f0f0f0'}}>
+                            <Typography variant="h6" fontWeight="bold">Column Mapping</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Ensure all fields are mapped correctly for accurate predictions.
+                            </Typography>
                         </Box>
-                        <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            {mappings.map((field) => (
-                                <Paper key={field.id} variant="outlined" sx={{ p: 2, display: 'grid', gridTemplateColumns: '2fr 2fr 1fr', alignItems: 'center', gap: 2, borderColor: field.status === 'error' ? '#FFCDD2' : '#E0E0E0', bgcolor: field.status === 'error' ? '#FFEBEE' : 'white' }}>
-                                    <Box>
-                                        <Typography variant="subtitle2" fontWeight="bold">{field.systemField}</Typography>
-                                        <Typography variant="caption" color="text.secondary">{field.desc}</Typography>
-                                    </Box>
 
-                                    {/* DYNAMIC DROPDOWN */}
-                                    <FormControl fullWidth size="small" error={field.status === 'error'}>
-                                        <Select
-                                            value={field.csvHeader || "select"}
-                                            onChange={(e) => handleMappingChange(field.id, e.target.value)}
-                                            sx={{ bgcolor: 'white' }}
-                                        >
-                                            <MenuItem value="select" disabled>Select column...</MenuItem>
-                                            {/* These items now come from your real CSV file */}
-                                            {csvColumns.map(col => (
-                                                <MenuItem key={col} value={col}>{col}</MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
+                        <Box sx={{p: 3}}>
+                            <Grid container spacing={2}>
+                                {mappings.map((field) => (
+                                    <Grid item xs={12} md={6} key={field.id}>
+                                        <Paper variant="outlined" sx={{
+                                            p: 2,
+                                            borderColor: field.status === 'error' ? '#FFCDD2' : '#E0E0E0',
+                                            bgcolor: field.status === 'error' ? '#FFF5F5' : 'white'
+                                        }}>
+                                            {/* Field Header */}
+                                            <Box sx={{mb: 1, display: 'flex', justifyContent: 'space-between'}}>
+                                                <Box>
+                                                    <Typography variant="subtitle2" fontWeight="bold">
+                                                        {field.label} <span style={{color: 'red'}}>*</span>
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        Type: {field.type}
+                                                    </Typography>
+                                                </Box>
+                                                {field.status === 'matched' &&
+                                                    <CheckCircleIcon color="success" fontSize="small"/>}
+                                                {field.status === 'warning' &&
+                                                    <WarningIcon color="warning" fontSize="small"/>}
+                                            </Box>
 
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        {field.status === 'matched' && <CheckCircleIcon color="success" fontSize="small" />}
-                                        {field.status === 'warning' && <WarningIcon color="warning" fontSize="small" />}
-                                        {field.status === 'error' && <ErrorIcon color="error" fontSize="small" />}
+                                            {/* Dropdown Input */}
+                                            <FormControl fullWidth size="small">
+                                                <Select
+                                                    value={field.csvHeader || "select"}
+                                                    onChange={(e) => handleMappingChange(field.id, e.target.value)}
+                                                    error={field.status === 'error'}
+                                                >
+                                                    <MenuItem value="select" disabled>Select column...</MenuItem>
+                                                    {csvColumns.map(col => (
+                                                        <MenuItem key={col} value={col}>{col}</MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
 
-                                        <Typography variant="body2" fontWeight="bold"
-                                                    color={field.status === 'matched' ? 'success.main' : field.status === 'error' ? 'error.main' : 'warning.main'}>
-                                            {field.status === 'matched' ? 'Matched' : field.status === 'error' ? 'Required' : 'Check Data'}
-                                        </Typography>
-                                    </Box>
-                                </Paper>
-                            ))}
+                                            {/* Helper Text */}
+                                            {field.status === 'warning' && (
+                                                <Typography variant="caption" color="warning.main"
+                                                            sx={{mt: 1, display: 'block'}}>
+                                                    {field.desc}
+                                                </Typography>
+                                            )}
+                                        </Paper>
+                                    </Grid>
+                                ))}
+                            </Grid>
                         </Box>
                     </Paper>
 
-                    {/* PREVIEW TABLE */}
-                    <Paper sx={{ mb: 4, borderRadius: 3, overflow: 'hidden' }}>
-                        <Box sx={{ p: 3, borderBottom: '1px solid #f0f0f0' }}>
+                    {/* --- DATA PREVIEW SECTION (Restored) --- */}
+                    <Paper sx={{mb: 4, borderRadius: 3, overflow: 'hidden'}}>
+                        <Box sx={{p: 3, borderBottom: '1px solid #f0f0f0'}}>
                             <Typography variant="h6" fontWeight="bold">Data Preview</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Showing the first 5 rows of your file.
+                            </Typography>
                         </Box>
                         <TableContainer>
-                            <Table>
-                                <TableHead sx={{ bgcolor: '#F8F9FC' }}>
+                            <Table size="small">
+                                <TableHead sx={{bgcolor: '#F8F9FC'}}>
                                     <TableRow>
-                                        {csvColumns.slice(0, 5).map(col => (
+                                        {csvColumns.slice(0, 8).map(col => (
                                             <TableCell key={col}><strong>{col}</strong></TableCell>
                                         ))}
+                                        {/* If too many columns, show a placeholder header */}
+                                        {csvColumns.length > 8 && <TableCell><strong>...</strong></TableCell>}
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {/* Render first 5 rows of real data */}
-                                    {previewData.map((row, index) => (
+                                    {rawCsvData.slice(0, 5).map((row, index) => (
                                         <TableRow key={index}>
-                                            {csvColumns.slice(0, 5).map(col => (
-                                                <TableCell key={col}>{row[col]}</TableCell>
+                                            {csvColumns.slice(0, 8).map(col => (
+                                                <TableCell key={`${index}-${col}`} sx={{
+                                                    maxWidth: 150,
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap'
+                                                }}>
+                                                    {row[col]}
+                                                </TableCell>
                                             ))}
+                                            {csvColumns.length > 8 && <TableCell>...</TableCell>}
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -355,16 +449,16 @@ export default function ImportPage() {
                         </TableContainer>
                     </Paper>
 
-                    {/* ACTIONS */}
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                        <Button startIcon={<ArrowBackIcon />} onClick={() => setActiveStep(0)}>Back</Button>
+                    {/* Footer Actions */}
+                    <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 2}}>
+                        <Button startIcon={<ArrowBackIcon/>} onClick={() => setActiveStep(0)}>Back</Button>
                         <Button
                             variant="contained"
-                            disabled={mutation.isPending} // <--- Auto-managed loading state
-                            startIcon={!mutation.isPending && <PlayArrowIcon />}
+                            disabled={mutation.isPending}
+                            startIcon={!mutation.isPending && <PlayArrowIcon/>}
                             onClick={handleStartScoring}
                         >
-                            {mutation.isPending ? 'Processing...' : 'Run Import'}
+                            {mutation.isPending ? 'Processing...' : 'Run Analysis'}
                         </Button>
                     </Box>
                 </>

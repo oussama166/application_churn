@@ -1,55 +1,128 @@
 'use client';
 
-import React from 'react';
+import React, {useMemo, useState, useEffect} from 'react';
 import {
-    Box, Paper, Typography, Avatar, Chip, LinearProgress,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    IconButton, Button, InputBase, Grid
+    Box,
+    Paper,
+    Typography,
+    Avatar,
+    Chip,
+    LinearProgress,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    IconButton,
+    InputBase,
+    Grid,
+    CircularProgress,
+    Alert
 } from '@mui/material';
-// [1] Import Grid2 explicitly to avoid version conflicts
-
 
 import {
-    TrendingUp, TrendingDown, Groups, Warning, MoreHoriz,
-    Search, Map as MapIcon, ArrowForward
+    TrendingUp,
+    TrendingDown,
+    Groups,
+    Warning,
+    MoreHoriz,
+    Search,
+    Close,
 } from '@mui/icons-material';
+
 import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-    ResponsiveContainer, PieChart, Pie, Cell, ReferenceDot
+    PieChart,
+    Pie,
+    Cell,
+    ResponsiveContainer,
 } from 'recharts';
 
-// ... (Keep your Mock Data & KPI Component the same) ...
-// (I will omit the data arrays here to save space, keep them as they were)
-const CHURN_DATA = [
-    {month: 'Jan', value: 2.1},
-    {month: 'Mar', value: 2.8},
-    {month: 'May', value: 2.4},
-    {month: 'Jul', value: 3.5},
-    {month: 'Sep', value: 4.2},
-    {month: 'Nov', value: 4.8},
-    {month: 'Jan (Proj)', value: 5.5},
-];
+// --- DEFINITION DES TYPES (Correspond à ton Backend Python) ---
+interface KpiData {
+    title: string;
+    value: string;
+    trend: string;
+    trendLabel: string;
+    iconType: string;
+    color: string;
+    isAlert: boolean;
+}
 
-const RISK_DATA = [
-    {name: 'Low', value: 1240, color: '#00C853'},
-    {name: 'Medium', value: 850, color: '#FFAB00'},
-    {name: 'High', value: 320, color: '#FF3D00'},
-];
+interface ClientData {
+    id: string;
+    phone: string;
+    score: number;
+    segment: string;
+    action: string;
+}
 
-const ARPU_DATA = [
-    {tier: 'Enterprise', avgRev: '$5.2k', risk: 'Low', riskColor: 'success'},
-    {tier: 'Mid-Market', avgRev: '$1.2k', risk: 'Med', riskColor: 'warning'},
-    {tier: 'SMB', avgRev: '$199', risk: 'High', riskColor: 'error'},
-    {tier: 'Starter', avgRev: '$49', risk: 'Critical', riskColor: 'error'},
-];
+interface ChartData {
+    name?: string;
+    month?: string;
+    value: number;
+    color?: string;
+}
+
+interface ArpuData {
+    tier: string;
+    avgRev: string;
+    risk: string;
+    riskColor: string;
+}
+
+interface DashboardData {
+    kpis: KpiData[];
+    churn_evolution: ChartData[];
+    risk_distribution: ChartData[];
+    arpu_analysis: ArpuData[];
+    clients_to_treat: ClientData[];
+}
+
+// --- UTILITAIRES ---
+
+// Helper pour mapper le nom de l'icône (string) vers le composant React MUI
+const getIconComponent = (iconName: string) => {
+    switch (iconName) {
+        case 'TrendingDown':
+            return <TrendingDown/>;
+        case 'Groups':
+            return <Groups/>;
+        case 'Warning':
+            return <Warning/>;
+        case 'TrendingUp':
+            return <TrendingUp/>;
+        default:
+            return <Groups/>;
+    }
+};
+
+const segmentChipColor = (segment: string) => {
+    if (segment === 'CRITICAL' || segment === 'High Risk') return {bg: '#FFEBEE', fg: '#C62828', border: '#FFCDD2'};
+    if (segment === 'HIGH' || segment === 'Medium Risk') return {bg: '#FFF3E0', fg: '#EF6C00', border: '#FFE0B2'};
+    return {bg: '#E8F5E9', fg: '#2E7D32', border: '#C8E6C9'};
+};
+
+const normalizePhone = (value: string) =>
+    (value || '')
+        .toString()
+        .trim()
+        .replace(/^00/, '+')
+        .replace(/\D/g, '');
+
+// --- COMPOSANTS UI ---
 
 const KpiCard = ({title, value, trend, trendLabel, icon, color, isAlert}: any) => (
     <Paper sx={{p: 3, height: '100%', borderRadius: 3, boxShadow: '0px 4px 20px rgba(0,0,0,0.02)'}}>
         <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2}}>
             <Box>
-                <Typography variant="body2" color="text.secondary" fontWeight="500">{title}</Typography>
+                <Typography variant="body2" color="text.secondary" fontWeight="500">
+                    {title}
+                </Typography>
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mt: 1}}>
-                    <Typography variant="h4" fontWeight="bold">{value}</Typography>
+                    <Typography variant="h4" fontWeight="bold">
+                        {value}
+                    </Typography>
                     {isAlert && <Warning color="error"/>}
                 </Box>
             </Box>
@@ -65,18 +138,95 @@ const KpiCard = ({title, value, trend, trendLabel, icon, color, isAlert}: any) =
                     bgcolor: trend.startsWith('+') && !isAlert ? '#E8F5E9' : '#FFEBEE',
                     color: trend.startsWith('+') && !isAlert ? '#2E7D32' : '#C62828',
                     fontWeight: 'bold',
-                    borderRadius: 1
+                    borderRadius: 1,
                 }}
             />
-            <Typography variant="caption" color="text.secondary">{trendLabel}</Typography>
+            <Typography variant="caption" color="text.secondary">
+                {trendLabel}
+            </Typography>
         </Box>
     </Paper>
 );
 
+// --- MAIN COMPONENT ---
+
 export default function DashboardPage() {
+    const [clientQuery, setClientQuery] = useState('');
+
+    // États pour les données dynamiques
+    const [data, setData] = useState<DashboardData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetching Data au chargement
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const res = await fetch('/api/dashboard');
+                if (!res.ok) throw new Error('Erreur réseau');
+                const jsonData = await res.json();
+
+                if (jsonData.error) throw new Error(jsonData.error);
+
+                setData(jsonData);
+            } catch (err: any) {
+                console.error("Erreur Dashboard:", err);
+                setError(err.message || "Impossible de charger le dashboard");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    // Calcul dynamique du total des risques pour le PieChart
+    const totalRiskCount = useMemo(() => {
+        if (!data?.risk_distribution) return 0;
+        return data.risk_distribution.reduce((acc, curr) => acc + curr.value, 0);
+    }, [data]);
+
+    // Filtrage des clients (recherche)
+    const filteredClients = useMemo(() => {
+        if (!data?.clients_to_treat) return [];
+
+        const qRaw = clientQuery.trim();
+        if (!qRaw) return data.clients_to_treat;
+
+        const qLower = qRaw.toLowerCase();
+        const qDigits = normalizePhone(qRaw);
+
+        return data.clients_to_treat.filter((c) => {
+            const id = (c.id || '').toLowerCase();
+            const phoneDigits = normalizePhone(c.phone || '');
+            const matchId = id.includes(qLower);
+            const matchPhone = qDigits.length >= 3 && phoneDigits.includes(qDigits);
+            return matchId || matchPhone;
+        });
+    }, [clientQuery, data]);
+
+    // --- RENDER LOADING / ERROR ---
+
+    if (loading) {
+        return (
+            <Box sx={{height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                <CircularProgress/>
+            </Box>
+        );
+    }
+
+    if (error || !data) {
+        return (
+            <Box sx={{p: 4}}>
+                <Alert severity="error">Erreur: {error}</Alert>
+            </Box>
+        );
+    }
+
+    // --- RENDER DASHBOARD ---
+
     return (
         <Box sx={{width: '100%', maxWidth: 1600, mx: 'auto'}}>
-
             {/* Header Section */}
             <Box sx={{mb: 5, display: 'flex', justifyContent: 'space-between', alignItems: 'end'}}>
                 <Box>
@@ -88,107 +238,193 @@ export default function DashboardPage() {
                     </Typography>
                 </Box>
 
-                <Paper sx={{
-                    p: '2px 4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    width: 300,
-                    borderRadius: 2,
-                    bgcolor: 'white',
-                    border: '1px solid #E0E0E0',
-                    boxShadow: 'none'
-                }}>
+                <Paper
+                    sx={{
+                        p: '2px 4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        width: 300,
+                        borderRadius: 2,
+                        bgcolor: 'white',
+                        border: '1px solid #E0E0E0',
+                        boxShadow: 'none',
+                    }}
+                >
                     <InputBase sx={{ml: 1, flex: 1}} placeholder="Search by segment..."/>
-                    <IconButton sx={{p: '10px'}}><Search/></IconButton>
+                    <IconButton sx={{p: '10px'}}>
+                        <Search/>
+                    </IconButton>
                     <Box sx={{height: 20, width: '1px', bgcolor: '#E0E0E0', mx: 1}}/>
                     <IconButton sx={{p: '10px', fontSize: 14, fontWeight: 'bold', color: '#9E9E9E'}}>⌘K</IconButton>
                 </Paper>
             </Box>
 
-            {/* 2. Top KPI Cards - FIXED GRID SYNTAX */}
+            {/* Top KPI Cards (Dynamique) */}
             <Grid container spacing={3} sx={{mb: 4}}>
-                <Grid size={{xs: 12, sm: 6, md: 3}}>
-                    <KpiCard
-                        title="Overall Churn Rate" value="4.2%" trend="+0.5%" trendLabel="vs last month"
-                        icon={<TrendingDown/>} color="#4285F4"
-                    />
-                </Grid>
-                <Grid size={{xs: 12, sm: 6, md: 3}}>
-                    <KpiCard
-                        title="Total Customers" value="1,240" trend="+1.2%" trendLabel="+15 net new"
-                        icon={<Groups/>} color="#7B61FF"
-                    />
-                </Grid>
-                <Grid size={{xs: 12, sm: 6, md: 3}}>
-                    <KpiCard
-                        title="High-Risk Revenue" value="$42k" trend="! Alert" trendLabel="12 Accounts at risk"
-                        icon={<Warning/>} color="#FF5252" isAlert
-                    />
-                </Grid>
-                <Grid size={{xs: 12, sm: 6, md: 3}}>
-                    <KpiCard
-                        title="Retention Rate" value="95.8%" trend="-0.2%" trendLabel="vs target (96%)"
-                        icon={<TrendingUp/>} color="#00C853"
-                    />
-                </Grid>
+                {data.kpis.map((kpi, index) => (
+                    <Grid key={index} item size={{xs: 12, sm: 6, md: 3}}>
+                        <KpiCard
+                            title={kpi.title}
+                            value={kpi.value}
+                            trend={kpi.trend}
+                            trendLabel={kpi.trendLabel}
+                            icon={getIconComponent(kpi.iconType)}
+                            color={kpi.color}
+                            isAlert={kpi.isAlert}
+                        />
+                    </Grid>
+                ))}
             </Grid>
 
-            {/* 3. Main Chart Row - FIXED GRID SYNTAX */}
-            <Grid container spacing={3} sx={{mb: 4}}>
+            {/* Main Content Row */}
+            <Grid container spacing={2} sx={{mb: 4}}>
 
-                {/* Left: Churn Evolution */}
-                <Grid size={{xs: 12, md: 8}}>
-                    <Paper sx={{p: 4, borderRadius: 3, height: 400, boxShadow: '0px 4px 20px rgba(0,0,0,0.02)'}}>
-                        {/* ... Chart Header ... */}
-                        <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 4}}>
+                {/* Middle: Clients to Treat (Table) */}
+                <Grid item size={{xs: 12, lg: 9}}>
+                    <Paper
+                        sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            height: 400,
+                            boxShadow: '0px 4px 20px rgba(0,0,0,0.02)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        {/* Header */}
+                        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5}}>
                             <Box>
-                                <Typography variant="h6" fontWeight="bold">Churn Trend & AI Forecast</Typography>
-                                <Typography variant="body2" color="text.secondary">12 Month Evolution</Typography>
-                            </Box>
-                            <Box sx={{display: 'flex', gap: 2}}>
-                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                    <Box sx={{width: 10, height: 10, borderRadius: '50%', bgcolor: '#4285F4'}}/>
-                                    <Typography variant="caption" fontWeight="bold">Actual</Typography>
-                                </Box>
-                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                    <Box sx={{width: 10, height: 10, borderRadius: '50%', bgcolor: '#E0E0E0'}}/>
-                                    <Typography variant="caption" fontWeight="bold"
-                                                color="text.secondary">Projected</Typography>
-                                </Box>
+                                <Typography variant="h6" fontWeight="bold">
+                                    Clients à Traiter
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {filteredClients.length} résultat(s) (Top Priority)
+                                </Typography>
                             </Box>
                         </Box>
 
-                        <ResponsiveContainer width="100%" height="80%">
-                            <AreaChart data={CHURN_DATA}>
-                                <defs>
-                                    <linearGradient id="colorChurn" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#4285F4" stopOpacity={0.2}/>
-                                        <stop offset="95%" stopColor="#4285F4" stopOpacity={0}/>
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F5F5F5"/>
-                                <XAxis dataKey="month" axisLine={false} tickLine={false}
-                                       tick={{fill: '#9E9E9E', fontSize: 12}} dy={10}/>
-                                <YAxis axisLine={false} tickLine={false} tick={{fill: '#9E9E9E', fontSize: 12}}/>
-                                <Tooltip/>
-                                <Area type="monotone" dataKey="value" stroke="#4285F4" strokeWidth={3} fillOpacity={1}
-                                      fill="url(#colorChurn)"/>
-                                <ReferenceDot x="Nov" y={4.8} r={6} fill="#1A1A1A" stroke="white" strokeWidth={2}/>
-                            </AreaChart>
-                        </ResponsiveContainer>
+                        {/* Search bar */}
+                        <Paper
+                            sx={{
+                                mb: 2,
+                                px: 1.5,
+                                py: 0.75,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                borderRadius: 2,
+                                bgcolor: 'white',
+                                border: '1px solid #E0E0E0',
+                                boxShadow: 'none',
+                            }}
+                        >
+                            <Search sx={{color: '#9E9E9E'}}/>
+                            <InputBase
+                                value={clientQuery}
+                                onChange={(e) => setClientQuery(e.target.value)}
+                                placeholder="Rechercher par ID client ou téléphone"
+                                sx={{flex: 1, fontSize: 14}}
+                            />
+                            {clientQuery.trim() !== '' && (
+                                <IconButton size="small" onClick={() => setClientQuery('')}>
+                                    <Close fontSize="small"/>
+                                </IconButton>
+                            )}
+                        </Paper>
+
+                        {/* Table (scrollable) */}
+                        <TableContainer
+                            sx={{
+                                flexGrow: 1,
+                                overflowY: 'auto',
+                                borderRadius: 2,
+                                border: '1px solid #F2F2F2',
+                            }}
+                        >
+                            <Table
+                                size="small"
+                                stickyHeader
+                                sx={{
+                                    '& th': {bgcolor: '#FAFAFA'},
+                                    '& td, & th': {borderBottom: '1px solid #F2F2F2'},
+                                }}
+                            >
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell><Typography variant="caption" color="text.secondary"
+                                                               fontWeight="bold">ID Client</Typography></TableCell>
+                                        <TableCell><Typography variant="caption" color="text.secondary"
+                                                               fontWeight="bold">Téléphone</Typography></TableCell>
+                                        <TableCell align="center"><Typography variant="caption" color="text.secondary"
+                                                                              fontWeight="bold">Score Churn</Typography></TableCell>
+                                        <TableCell align="center"><Typography variant="caption" color="text.secondary"
+                                                                              fontWeight="bold">Segment</Typography></TableCell>
+                                        <TableCell><Typography variant="caption" color="text.secondary"
+                                                               fontWeight="bold">Action
+                                            Recommandée</Typography></TableCell>
+                                    </TableRow>
+                                </TableHead>
+
+                                <TableBody>
+                                    {filteredClients.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5}>
+                                                <Typography variant="body2" color="text.secondary"
+                                                            sx={{py: 2, textAlign: 'center'}}>
+                                                    Aucun client trouvé.
+                                                </Typography>
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        filteredClients.map((c) => {
+                                            const chip = segmentChipColor(c.segment);
+                                            return (
+                                                <TableRow key={c.id} hover>
+                                                    <TableCell><Typography variant="body2"
+                                                                           fontWeight="bold">{c.id}</Typography></TableCell>
+                                                    <TableCell><Typography variant="body2" color="text.secondary"
+                                                                           noWrap>{c.phone}</Typography></TableCell>
+                                                    <TableCell align="center"><Typography variant="body2"
+                                                                                          fontWeight="bold">{c.score.toFixed(2)}</Typography></TableCell>
+                                                    <TableCell align="center">
+                                                        <Chip
+                                                            label={c.segment}
+                                                            size="small"
+                                                            sx={{
+                                                                bgcolor: chip.bg,
+                                                                color: chip.fg,
+                                                                border: `1px solid ${chip.border}`,
+                                                                fontWeight: 'bold',
+                                                                borderRadius: 1,
+                                                                height: 24,
+                                                            }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell><Typography variant="body2"
+                                                                           noWrap>{c.action}</Typography></TableCell>
+                                                </TableRow>
+                                            );
+                                        })
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
                     </Paper>
                 </Grid>
 
-                {/* Right: Risk Distribution */}
-                <Grid size={{xs: 12, md: 4}}>
-                    <Paper sx={{
-                        p: 4,
-                        borderRadius: 3,
-                        height: 400,
-                        boxShadow: '0px 4px 20px rgba(0,0,0,0.02)',
-                        display: 'flex',
-                        flexDirection: 'column'
-                    }}>
+                {/* Right: Risk Distribution (Dynamique) */}
+                <Grid item size={{xs: 12, lg: 3, md: 3}}>
+                    <Paper
+                        sx={{
+                            p: 4,
+                            borderRadius: 3,
+                            height: 400,
+                            boxShadow: '0px 4px 20px rgba(0,0,0,0.02)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                        }}
+                    >
                         <Typography variant="h6" fontWeight="bold">Risk Distribution</Typography>
                         <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>Customers by risk
                             level</Typography>
@@ -197,39 +433,39 @@ export default function DashboardPage() {
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={RISK_DATA}
+                                        data={data.risk_distribution}
                                         innerRadius={60}
                                         outerRadius={90}
-                                        paddingAngle={10}
+                                        paddingAngle={5}
                                         dataKey="value"
                                     >
-                                        {RISK_DATA.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={entry.color}
-                                                stroke="none"
-                                            />
+                                        {data.risk_distribution.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} stroke="none"/>
                                         ))}
                                     </Pie>
                                 </PieChart>
                             </ResponsiveContainer>
 
-                            {/* Center Label */}
-                            <Box sx={{
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                textAlign: 'center'
-                            }}>
-                                {/* Adjusted font size slightly to fit the smaller hole */}
-                                <Typography variant="h5" fontWeight="bold">1,240</Typography>
-                                <Typography variant="caption" color="text.secondary">Total</Typography>
+                            <Box
+                                sx={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    textAlign: 'center',
+                                }}
+                            >
+                                <Typography variant="h5" fontWeight="bold">
+                                    {totalRiskCount}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                    Total
+                                </Typography>
                             </Box>
                         </Box>
 
                         <Box sx={{display: 'flex', justifyContent: 'space-around', mt: 2}}>
-                            {RISK_DATA.map(item => (
+                            {data.risk_distribution.map((item) => (
                                 <Box key={item.name} sx={{textAlign: 'center'}}>
                                     <Box sx={{
                                         width: 40,
@@ -239,10 +475,15 @@ export default function DashboardPage() {
                                         mb: 1,
                                         mx: 'auto'
                                     }}/>
-                                    <Typography variant="caption" fontWeight="bold"
-                                                color="text.secondary">{item.name}</Typography>
-                                    <Typography variant="body2"
-                                                fontWeight="bold">{(item.value / 2410 * 100).toFixed(0)}%</Typography>
+                                    <Typography variant="caption" fontWeight="bold" color="text.secondary">
+                                        {item.name}
+                                    </Typography>
+                                    <Typography variant="body2" fontWeight="bold">
+                                        {/* Calcul du pourcentage dynamique */}
+                                        {totalRiskCount > 0
+                                            ? ((item.value / totalRiskCount) * 100).toFixed(0)
+                                            : 0}%
+                                    </Typography>
                                 </Box>
                             ))}
                         </Box>
@@ -250,48 +491,33 @@ export default function DashboardPage() {
                 </Grid>
             </Grid>
 
-            {/* 4. Bottom Detail Row - FIXED GRID SYNTAX */}
-            <Grid container spacing={3}>
-
-                {/* Left: Global Hotspots */}
-                <Grid size={{xs: 12, md: 4}}>
-                    <Paper sx={{p: 3, borderRadius: 3, height: '100%', minHeight: 300}}>
-                        <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 2}}>
-                            <Typography variant="h6" fontWeight="bold">Global Hotspots</Typography>
-                            <Button size="small" endIcon={<ArrowForward/>}>View Map</Button>
-                        </Box>
-                        <Box sx={{
-                            bgcolor: '#F5F7FA',
-                            borderRadius: 2,
-                            height: 200,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <MapIcon sx={{fontSize: 48, color: '#E0E0E0'}}/>
-                            <Typography color="text.secondary" sx={{ml: 2}}>Map Visualization Component</Typography>
-                        </Box>
-                    </Paper>
-                </Grid>
-
-                {/* Middle: Churn by Contract */}
-                <Grid size={{xs: 12, md: 4}}>
+            {/* Bottom Detail Row */}
+            <Grid container spacing={2} sx={{mb: 4}}>
+                {/* Middle: Churn by Contract (Statique pour l'instant, ou à mapper si la DB le supporte) */}
+                <Grid item size={{xs: 12,  md: 6}}>
                     <Paper sx={{p: 3, borderRadius: 3, height: '100%'}}>
-                        <Typography variant="h6" fontWeight="bold" sx={{mb: 3}}>Churn by Contract</Typography>
+                        <Typography variant="h6" fontWeight="bold" sx={{mb: 3}}>
+                            Churn by Contract
+                        </Typography>
 
                         <Box sx={{mb: 4}}>
                             <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 1}}>
                                 <Typography variant="body2" fontWeight="500">Monthly Plan</Typography>
                                 <Typography variant="body2" fontWeight="bold">6.8%</Typography>
                             </Box>
-                            <LinearProgress variant="determinate" value={68} sx={{
-                                height: 8,
-                                borderRadius: 4,
-                                bgcolor: '#E3F2FD',
-                                '& .MuiLinearProgress-bar': {bgcolor: '#4285F4'}
-                            }}/>
-                            <Typography variant="caption" color="text.secondary" sx={{mt: 0.5, display: 'block'}}>High
-                                volatility segment</Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={68}
+                                sx={{
+                                    height: 8,
+                                    borderRadius: 4,
+                                    bgcolor: '#E3F2FD',
+                                    '& .MuiLinearProgress-bar': {bgcolor: '#4285F4'},
+                                }}
+                            />
+                            <Typography variant="caption" color="text.secondary" sx={{mt: 0.5, display: 'block'}}>
+                                High volatility segment
+                            </Typography>
                         </Box>
 
                         <Box sx={{mb: 4}}>
@@ -299,24 +525,33 @@ export default function DashboardPage() {
                                 <Typography variant="body2" fontWeight="500">Annual Plan</Typography>
                                 <Typography variant="body2" fontWeight="bold">1.2%</Typography>
                             </Box>
-                            <LinearProgress variant="determinate" value={12} sx={{
-                                height: 8,
-                                borderRadius: 4,
-                                bgcolor: '#E8F5E9',
-                                '& .MuiLinearProgress-bar': {bgcolor: '#00C853'}
-                            }}/>
-                            <Typography variant="caption" color="text.secondary" sx={{mt: 0.5, display: 'block'}}>Stable
-                                revenue base</Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={12}
+                                sx={{
+                                    height: 8,
+                                    borderRadius: 4,
+                                    bgcolor: '#E8F5E9',
+                                    '& .MuiLinearProgress-bar': {bgcolor: '#00C853'},
+                                }}
+                            />
+                            <Typography variant="caption" color="text.secondary" sx={{mt: 0.5, display: 'block'}}>
+                                Stable revenue base
+                            </Typography>
                         </Box>
                     </Paper>
                 </Grid>
 
-                {/* Right: Analysis by ARPU */}
-                <Grid size={{xs: 12, md: 4}}>
+                {/* Right: Analysis by ARPU (Dynamique) */}
+                <Grid item size={{xs: 12,  md: 6}}>
                     <Paper sx={{p: 3, borderRadius: 3, height: '100%'}}>
                         <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 2}}>
-                            <Typography variant="h6" fontWeight="bold">Analysis by ARPU</Typography>
-                            <IconButton size="small"><MoreHoriz/></IconButton>
+                            <Typography variant="h6" fontWeight="bold">
+                                Analysis by ARPU
+                            </Typography>
+                            <IconButton size="small">
+                                <MoreHoriz/>
+                            </IconButton>
                         </Box>
                         <TableContainer>
                             <Table size="small" sx={{'& td, & th': {borderBottom: 'none', px: 0}}}>
@@ -332,7 +567,7 @@ export default function DashboardPage() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {ARPU_DATA.map((row) => (
+                                    {data.arpu_analysis.map((row) => (
                                         <TableRow key={row.tier}>
                                             <TableCell sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                                                 <Box sx={{
