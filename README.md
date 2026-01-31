@@ -2,6 +2,13 @@
 
 Application complète de prédiction de désabonnement client avec interface web moderne et API backend. Cette application permet d'analyser les données clients, de prédire les risques de désabonnement et de visualiser les insights via un tableau de bord interactif.
 
+## 🎥 Démonstration
+
+<video width="100%" controls>
+  <source src="video-demonstration.mp4" type="video/mp4">
+  Votre navigateur ne supporte pas la lecture de vidéos.
+</video>
+
 ## 📋 Table des Matières
 
 - [Fonctionnalités](#-fonctionnalités)
