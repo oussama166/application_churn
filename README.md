@@ -4,10 +4,13 @@ Application complète de prédiction de désabonnement client avec interface web
 
 ## 🎥 Démonstration
 
-<video width="100%" controls>
-  <source src="video-demonstration.mp4" type="video/mp4">
-  Votre navigateur ne supporte pas la lecture de vidéos.
-</video>
+[![Vidéo de démonstration](https://img.shields.io/badge/▶-Voir%20la%20vidéo%20de%20démonstration-blue?style=for-the-badge)](video-demonstration.mp4)
+
+*Cliquez sur le bouton ci-dessus pour télécharger et visualiser la vidéo de démonstration.*
+
+> **Note :** GitHub ne supporte pas la prévisualisation vidéo directement dans les README. Pour une meilleure expérience, vous pouvez :
+> - Télécharger la vidéo en cliquant sur le bouton ci-dessus
+> - Ou héberger la vidéo sur YouTube/Vimeo et l'intégrer ici
 
 ## 📋 Table des Matières
 
@@ -555,22 +558,6 @@ application_churn/
 - `GET /api/dashboard/metrics` - Métriques du tableau de bord
 
 Documentation complète : http://localhost:8000/docs
-
-## 🤝 Contribution
-
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Commit les changements (`git commit -m 'Add some AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
-
-## 📝 License
-
-[Spécifier votre licence ici]
-
-## 👥 Auteurs
-
-[Vos noms/informations]
 
 ## 🙏 Remerciements
 
