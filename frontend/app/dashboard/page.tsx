@@ -62,8 +62,14 @@ const getIconComponent = (iconName: string) => {
 };
 
 const segmentChipColor = (segment: string) => {
-    if (segment === 'CRITICAL' || segment === 'High Risk') return {bg: '#FFEBEE', fg: '#C62828', border: '#FFCDD2'};
-    if (segment === 'HIGH' || segment === 'Medium Risk') return {bg: '#FFF3E0', fg: '#EF6C00', border: '#FFE0B2'};
+    // Match dashboard risk distribution colors: High (#C62828), Medium (#EF6C00), Low (#2E7D32)
+    if (segment === 'High' || segment === 'CRITICAL' || segment === 'High Risk') {
+        return {bg: '#FFEBEE', fg: '#C62828', border: '#FFCDD2'};
+    }
+    if (segment === 'Medium' || segment === 'HIGH' || segment === 'Medium Risk') {
+        return {bg: '#FFF3E0', fg: '#EF6C00', border: '#FFE0B2'};
+    }
+    // Low or default
     return {bg: '#E8F5E9', fg: '#2E7D32', border: '#C8E6C9'};
 };
 
@@ -77,32 +83,45 @@ const normalizePhone = (value: string) =>
 // --- COMPOSANTS UI ---
 
 const KpiCard = ({title, value, trend, trendLabel, icon, color, isAlert}: any) => (
-    <Paper sx={{p: 3, height: '100%', borderRadius: 3, boxShadow: '0px 4px 20px rgba(0,0,0,0.02)'}}>
+    <Paper 
+        sx={{
+            p: 3, 
+            height: '100%', 
+            borderRadius: 3, 
+            boxShadow: '0px 2px 8px rgba(0,0,0,0.08)',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0px 4px 12px rgba(0,0,0,0.12)',
+            }
+        }}
+    >
         <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2}}>
-            <Box>
-                <Typography variant="body2" color="text.secondary" fontWeight="500">
+            <Box sx={{flex: 1}}>
+                <Typography variant="body2" color="text.secondary" fontWeight="500" sx={{mb: 1}}>
                     {title}
                 </Typography>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mt: 1}}>
-                    <Typography variant="h4" fontWeight="bold">
+                <Box sx={{display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap'}}>
+                    <Typography variant="h4" fontWeight="bold" sx={{color: '#1A1A1A'}}>
                         {value}
                     </Typography>
-                    {isAlert && <Warning color="error"/>}
+                    {isAlert && <Warning color="error" sx={{fontSize: 20}}/>}
                 </Box>
             </Box>
-            <Avatar sx={{bgcolor: `${color}15`, color: color, borderRadius: 2}}>
+            <Avatar sx={{bgcolor: `${color}15`, color: color, borderRadius: 2, width: 48, height: 48}}>
                 {icon}
             </Avatar>
         </Box>
-        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap'}}>
             <Chip
                 label={trend}
                 size="small"
                 sx={{
-                    bgcolor: trend.startsWith('+') && !isAlert ? '#E8F5E9' : '#FFEBEE',
-                    color: trend.startsWith('+') && !isAlert ? '#2E7D32' : '#C62828',
+                    bgcolor: trend.startsWith('+') && !isAlert ? '#E8F5E9' : trend.includes('%') && !isAlert ? '#FFF3E0' : '#FFEBEE',
+                    color: trend.startsWith('+') && !isAlert ? '#2E7D32' : trend.includes('%') && !isAlert ? '#EF6C00' : '#C62828',
                     fontWeight: 'bold',
                     borderRadius: 1,
+                    fontSize: '0.75rem',
                 }}
             />
             <Typography variant="caption" color="text.secondary">
@@ -163,43 +182,21 @@ export default function DashboardPage() {
     // --- RENDER DASHBOARD ---
 
     return (
-        <Box sx={{width: '100%', maxWidth: 1600, mx: 'auto'}}>
+        <Box sx={{width: '100%', maxWidth: 1600, mx: 'auto', px: {xs: 2, sm: 3, md: 4}, py: 3}}>
             {/* Header Section */}
-            <Box sx={{mb: 5, display: 'flex', justifyContent: 'space-between', alignItems: 'end'}}>
-                <Box>
-                    <Typography variant="h4" fontWeight="bold" sx={{color: '#1A1A1A', mb: 1}}>
-                        Bonjour, Alex
-                    </Typography>
-                    <Typography variant="body1" color="text.secondary">
-                        Surveillez les risques de désabonnement et trouvez des insights clients instantanément.
-                    </Typography>
-                </Box>
-
-                <Paper
-                    sx={{
-                        p: '2px 4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        width: 300,
-                        borderRadius: 2,
-                        bgcolor: 'white',
-                        border: '1px solid #E0E0E0',
-                        boxShadow: 'none',
-                    }}
-                >
-                    <InputBase sx={{ml: 1, flex: 1}} placeholder="Rechercher par segment..."/>
-                    <IconButton sx={{p: '10px'}}>
-                        <Search/>
-                    </IconButton>
-                    <Box sx={{height: 20, width: '1px', bgcolor: '#E0E0E0', mx: 1}}/>
-                    <IconButton sx={{p: '10px', fontSize: 14, fontWeight: 'bold', color: '#9E9E9E'}}>⌘K</IconButton>
-                </Paper>
+            <Box sx={{mb: 4}}>
+                <Typography variant="h4" fontWeight="bold" sx={{color: '#1A1A1A', mb: 1}}>
+                    Tableau de Bord
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                    Surveillez les risques de désabonnement et trouvez des insights clients instantanément.
+                </Typography>
             </Box>
 
             {/* Top KPI Cards (Dynamique) */}
             <Grid container spacing={3} sx={{mb: 4}}>
                 {data.kpis.map((kpi, index) => (
-                    <Grid key={index} size={{xs: 12, sm: 6, md: 3}} component="div">
+                    <Grid key={index} size={{xs: 12, sm: 6, md: 3}}>
                         <KpiCard
                             title={kpi.title}
                             value={kpi.value}
@@ -214,16 +211,17 @@ export default function DashboardPage() {
             </Grid>
 
             {/* Main Content Row */}
-            <Grid container spacing={2} sx={{mb: 4}}>
+            <Grid container spacing={3} sx={{mb: 4}}>
 
                 {/* Middle: Clients to Treat (Table) */}
-                <Grid size={{xs: 12, lg: 9}} component="div">
+                <Grid size={{xs: 12, lg: 9}}>
                     <Paper
                         sx={{
                             p: 3,
                             borderRadius: 3,
-                            height: 400,
-                            boxShadow: '0px 4px 20px rgba(0,0,0,0.02)',
+                            height: {xs: 'auto', md: 500},
+                            minHeight: 400,
+                            boxShadow: '0px 2px 8px rgba(0,0,0,0.08)',
                             display: 'flex',
                             flexDirection: 'column',
                             overflow: 'hidden',
@@ -289,17 +287,31 @@ export default function DashboardPage() {
                             >
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell><Typography variant="caption" color="text.secondary"
-                                                               fontWeight="bold">ID Client</Typography></TableCell>
-                                        <TableCell><Typography variant="caption" color="text.secondary"
-                                                               fontWeight="bold">Téléphone</Typography></TableCell>
-                                        <TableCell align="center"><Typography variant="caption" color="text.secondary"
-                                                                              fontWeight="bold">Score Churn</Typography></TableCell>
-                                        <TableCell align="center"><Typography variant="caption" color="text.secondary"
-                                                                              fontWeight="bold">Segment</Typography></TableCell>
-                                        <TableCell><Typography variant="caption" color="text.secondary"
-                                                               fontWeight="bold">Action
-                                            Recommandée</Typography></TableCell>
+                                        <TableCell sx={{py: 1.5}}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                                                ID Client
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell sx={{py: 1.5}}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                                                Téléphone
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell align="center" sx={{py: 1.5}}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                                                Score Churn
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell align="center" sx={{py: 1.5}}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                                                Segment
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell sx={{py: 1.5}}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                                                Action Recommandée
+                                            </Typography>
+                                        </TableCell>
                                     </TableRow>
                                 </TableHead>
 
@@ -319,14 +331,23 @@ export default function DashboardPage() {
                                         filteredClients.map((c) => {
                                             const chip = segmentChipColor(c.segment);
                                             return (
-                                                <TableRow key={c.id} hover>
-                                                    <TableCell><Typography variant="body2"
-                                                                           fontWeight="bold">{c.id}</Typography></TableCell>
-                                                    <TableCell><Typography variant="body2" color="text.secondary"
-                                                                           noWrap>{c.phone}</Typography></TableCell>
-                                                    <TableCell align="center"><Typography variant="body2"
-                                                                                          fontWeight="bold">{c.score.toFixed(2)}</Typography></TableCell>
-                                                    <TableCell align="center">
+                                                <TableRow key={c.id} hover sx={{'&:hover': {bgcolor: '#FAFAFA'}}}>
+                                                    <TableCell sx={{py: 1.5}}>
+                                                        <Typography variant="body2" fontWeight="600">
+                                                            {c.id}
+                                                        </Typography>
+                                                    </TableCell>
+                                                    <TableCell sx={{py: 1.5}}>
+                                                        <Typography variant="body2" color="text.secondary" noWrap>
+                                                            {c.phone}
+                                                        </Typography>
+                                                    </TableCell>
+                                                    <TableCell align="center" sx={{py: 1.5}}>
+                                                        <Typography variant="body2" fontWeight="bold" sx={{color: '#1A1A1A'}}>
+                                                            {c.score.toFixed(2)}
+                                                        </Typography>
+                                                    </TableCell>
+                                                    <TableCell align="center" sx={{py: 1.5}}>
                                                         <Chip
                                                             label={c.segment}
                                                             size="small"
@@ -337,11 +358,15 @@ export default function DashboardPage() {
                                                                 fontWeight: 'bold',
                                                                 borderRadius: 1,
                                                                 height: 24,
+                                                                minWidth: 70,
                                                             }}
                                                         />
                                                     </TableCell>
-                                                    <TableCell><Typography variant="body2"
-                                                                           noWrap>{c.action}</Typography></TableCell>
+                                                    <TableCell sx={{py: 1.5}}>
+                                                        <Typography variant="body2" noWrap>
+                                                            {c.action}
+                                                        </Typography>
+                                                    </TableCell>
                                                 </TableRow>
                                             );
                                         })
@@ -353,20 +378,22 @@ export default function DashboardPage() {
                 </Grid>
 
                 {/* Right: Risk Distribution (Dynamique) */}
-                <Grid size={{xs: 12, lg: 3, md: 3}} component="div">
+                <Grid size={{xs: 12, lg: 3}}>
                     <Paper
                         sx={{
-                            p: 4,
+                            p: 3,
                             borderRadius: 3,
-                            height: 400,
-                            boxShadow: '0px 4px 20px rgba(0,0,0,0.02)',
+                            height: {xs: 'auto', md: 500},
+                            minHeight: 400,
+                            boxShadow: '0px 2px 8px rgba(0,0,0,0.08)',
                             display: 'flex',
                             flexDirection: 'column',
                         }}
                     >
-                        <Typography variant="h6" fontWeight="bold">Distribution des Risques</Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>Clients par niveau de
-                            risque</Typography>
+                        <Typography variant="h6" fontWeight="bold" sx={{mb: 0.5}}>Distribution des Risques</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
+                            Clients par niveau de risque
+                        </Typography>
 
                         {totalRiskCount === 0 ? (
                             <Box sx={{flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
@@ -442,10 +469,10 @@ export default function DashboardPage() {
             </Grid>
 
             {/* Bottom Detail Row */}
-            <Grid container spacing={2} sx={{mb: 4}}>
+            <Grid container spacing={3} sx={{mb: 4}}>
                 {/* Middle: Churn by Contract */}
-                <Grid size={{xs: 12,  md: 6}} component="div">
-                    <Paper sx={{p: 3, borderRadius: 3, height: '100%'}}>
+                <Grid size={{xs: 12, md: 6}}>
+                    <Paper sx={{p: 3, borderRadius: 3, height: '100%', boxShadow: '0px 2px 8px rgba(0,0,0,0.08)'}}>
                         <Typography variant="h6" fontWeight="bold" sx={{mb: 3}}>
                             Désabonnement par Contrat
                         </Typography>
@@ -497,13 +524,13 @@ export default function DashboardPage() {
                 </Grid>
 
                 {/* Right: Analysis by ARPU (Dynamique) */}
-                <Grid size={{xs: 12,  md: 6}} component="div">
-                    <Paper sx={{p: 3, borderRadius: 3, height: '100%'}}>
-                        <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 2}}>
+                <Grid size={{xs: 12, md: 6}}>
+                    <Paper sx={{p: 3, borderRadius: 3, height: '100%', boxShadow: '0px 2px 8px rgba(0,0,0,0.08)'}}>
+                        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
                             <Typography variant="h6" fontWeight="bold">
                                 Analyse par ARPU
                             </Typography>
-                            <IconButton size="small">
+                            <IconButton size="small" sx={{color: 'text.secondary'}}>
                                 <MoreHoriz/>
                             </IconButton>
                         </Box>
@@ -511,13 +538,21 @@ export default function DashboardPage() {
                             <Table size="small" sx={{'& td, & th': {borderBottom: 'none', px: 0}}}>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell><Typography variant="caption" color="text.secondary"
-                                                               fontWeight="bold">TIER</Typography></TableCell>
-                                        <TableCell align="right"><Typography variant="caption" color="text.secondary"
-                                                                             fontWeight="bold">AVG
-                                            REV</Typography></TableCell>
-                                        <TableCell align="right"><Typography variant="caption" color="text.secondary"
-                                                                             fontWeight="bold">RISK</Typography></TableCell>
+                                        <TableCell sx={{py: 1.5}}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                                                TIER
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell align="right" sx={{py: 1.5}}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                                                AVG REV
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell align="right" sx={{py: 1.5}}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                                                RISK
+                                            </Typography>
+                                        </TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -532,24 +567,30 @@ export default function DashboardPage() {
                                         </TableRow>
                                     ) : (
                                         data.arpu_analysis.map((row) => (
-                                            <TableRow key={row.tier}>
-                                                <TableCell sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                            <TableRow key={row.tier} hover sx={{'&:hover': {bgcolor: '#FAFAFA'}}}>
+                                                <TableCell sx={{display: 'flex', alignItems: 'center', gap: 1, py: 1.5}}>
                                                     <Box sx={{
-                                                        width: 8,
-                                                        height: 8,
+                                                        width: 10,
+                                                        height: 10,
                                                         borderRadius: '50%',
-                                                        bgcolor: '#E0E0E0'
+                                                        bgcolor: '#4285F4'
                                                     }}/>
-                                                    <Typography variant="body2" fontWeight="500">{row.tier}</Typography>
+                                                    <Typography variant="body2" fontWeight="500">
+                                                        {row.tier}
+                                                    </Typography>
                                                 </TableCell>
-                                                <TableCell align="right">{row.avgRev}</TableCell>
-                                                <TableCell align="right">
+                                                <TableCell align="right" sx={{py: 1.5}}>
+                                                    <Typography variant="body2" fontWeight="600">
+                                                        {row.avgRev}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell align="right" sx={{py: 1.5}}>
                                                     <Chip
                                                         label={row.risk}
                                                         size="small"
                                                         variant="outlined"
                                                         color={row.riskColor as any}
-                                                        sx={{height: 24, borderRadius: 1, fontWeight: 'bold'}}
+                                                        sx={{height: 24, borderRadius: 1, fontWeight: 'bold', minWidth: 70}}
                                                     />
                                                 </TableCell>
                                             </TableRow>

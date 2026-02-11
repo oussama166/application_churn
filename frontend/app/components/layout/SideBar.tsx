@@ -130,50 +130,8 @@ export default function SideBar({user}: SideBarProps) {
 
             <Box sx={{flexGrow: 1}}/>
 
-            {/* AI Insight Card */}
-            <Collapse in={isOpen} orientation="horizontal" unmountOnExit>
-                <Box sx={{p: 2, width: DRAWER_WIDTH, boxSizing: 'border-box'}}>
-                    <Box
-                        sx={{
-                            bgcolor: '#4285F4',
-                            borderRadius: 3,
-                            p: 2,
-                            color: 'white',
-                            background: 'linear-gradient(135deg, #4285F4 0%, #2b6ad0 100%)',
-                            width: '100%'
-                        }}
-                    >
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
-                            <AutoAwesomeIcon fontSize="small"/>
-                            <Typography variant="caption" fontWeight="bold" noWrap>INSIGHT IA</Typography>
-                        </Box>
-                        <Typography variant="body2" sx={{mb: 2, opacity: 0.9}}>
-                            Le risque de désabonnement a augmenté de 2,4%.
-                        </Typography>
-                        <Typography variant="caption" sx={{textDecoration: 'underline', cursor: 'pointer'}}>
-                            Voir les Détails
-                        </Typography>
-                    </Box>
-                </Box>
-            </Collapse>
-
             <Divider sx={{my: 1}}/>
 
-            {/* User Profile */}
-
-            <Box sx={{p: 2, display: 'flex', gap: 2}}>
-                <Avatar src={user?.image || "/default-avatar.png"} alt={user?.name || "User"}/>
-                {isOpen && (
-                    <Box sx={{minWidth: 0}}>
-                        <Typography variant="subtitle2" fontWeight="bold" noWrap>
-                            {user?.name || "Guest"}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap>
-                            {user?.email}
-                        </Typography>
-                    </Box>
-                )}
-            </Box>
         </Box>
     );
 }

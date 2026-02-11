@@ -117,42 +117,42 @@ export default function Header() {
 
                 {/* Date Select - Only show on dashboard page */}
                 {pathname === '/dashboard' && (
-                    <Select
-                        value={dateRange}
-                        onChange={handleDateChange}
-                        displayEmpty
-                        IconComponent={KeyboardArrowDownIcon}
-                        startAdornment={
-                            <InputAdornment position="start" sx={{ mr: 1 }}>
-                                <CalendarTodayIcon fontSize="small" sx={{ color: '#5A6B7C' }} />
-                            </InputAdornment>
+                <Select
+                    value={dateRange}
+                    onChange={handleDateChange}
+                    displayEmpty
+                    IconComponent={KeyboardArrowDownIcon}
+                    startAdornment={
+                        <InputAdornment position="start" sx={{ mr: 1 }}>
+                            <CalendarTodayIcon fontSize="small" sx={{ color: '#5A6B7C' }} />
+                        </InputAdornment>
+                    }
+                    sx={{
+                        height: 40,
+                        bgcolor: '#FFFFFF',
+                        color: '#333',
+                        border: '1px solid #E0E0E0',
+                        borderRadius: 2,
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        boxShadow: 'none',
+                        '&:hover': {
+                            bgcolor: '#F9FAFB',
+                            borderColor: '#B0B0B0',
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                        '& .MuiSelect-select': {
+                            paddingLeft: 0,
+                            display: 'flex',
+                            alignItems: 'center',
                         }
-                        sx={{
-                            height: 40,
-                            bgcolor: '#FFFFFF',
-                            color: '#333',
-                            border: '1px solid #E0E0E0',
-                            borderRadius: 2,
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                            boxShadow: 'none',
-                            '&:hover': {
-                                bgcolor: '#F9FAFB',
-                                borderColor: '#B0B0B0',
-                            },
-                            '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                            '& .MuiSelect-select': {
-                                paddingLeft: 0,
-                                display: 'flex',
-                                alignItems: 'center',
-                            }
-                        }}
-                    >
+                    }}
+                >
                         <MenuItem value="7_days">7 Derniers Jours</MenuItem>
                         <MenuItem value="30_days">30 Derniers Jours</MenuItem>
                         <MenuItem value="90_days">3 Derniers Mois</MenuItem>
                         <MenuItem value="year">Dernière Année</MenuItem>
-                    </Select>
+                </Select>
                 )}
 
                 {/* Notification Bell */}
